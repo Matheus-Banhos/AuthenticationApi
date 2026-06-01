@@ -16,11 +16,25 @@ public class EmployeeController : ControllerBase
     }
     
     [HttpPost]
-    public IActionResult Add(EmployeeViewModel employeeViewModel)
+    public IActionResult Add([FromForm] EmployeeViewModel employeeViewModel)
     {
-        var employee = new Employee(employeeViewModel.Name, employeeViewModel.Age, null);
+        var filePath = Path.Combine("Storage", employeeViewModel.Photo.FileName);
+        
+        using Stream fileStream = new FileStream(filePath, FileMode.Create);
+        employeeViewModel.Photo.CopyTo(fileStream);
+        
+        var employee = new Employee(employeeViewModel.Name, employeeViewModel.Age, filePath);
         _employeeRepository.Add(employee);
         return Ok();
+    }
+
+    [HttpPost]
+    [Route("{id}/download")]
+    public IActionResult DownloadPhoto(int id)
+    {
+        var employee = _employeeRepository.Get(id); 
+        var dataBytes = System.IO.File.ReadAllBytes(employee.photo);
+        return File(dataBytes, "image/png");
     }
 
     [HttpGet]
